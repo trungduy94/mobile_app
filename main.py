@@ -202,20 +202,30 @@ def get_schedule(relay_id:int=Path(...,ge=1,le=4)):
         if not obj: raise HTTPException(404,"no schedule"); return obj
 
 # status & log ----------------------------------------------
-@app.post("/api/post_relay_status/{relay_id}", tags=["relay"])
-def post_status(relay_id:int=Path(...,ge=1,le=4), s:RelayStatusIn=...):
-    now=datetime.utcnow()
+# status -----------------------------------------------------
+@app.get(
+    "/api/get_relay_status/{relay_id}",
+    response_model=RelayStatusOut,
+    tags=["relay"],
+)
+def get_status(relay_id: int = Path(..., ge=1, le=4)):
+    """
+    Trả về trạng thái relay.  
+    Nếu chưa có bản ghi → tạo mặc định status = 0 (False) rồi trả về.
+    """
+    now = datetime.utcnow()
     with Session() as db:
-        db.add(RelayOnLog(relay=relay_id,time=now) if s.status
-               else RelayOffLog(relay=relay_id,time=now))
-        upsert(db,RelayStatus,'relay',relay_id,status=s.status,update_time=now)
-    return {"msg":"saved"}
-@app.get("/api/get_relay_status/{relay_id}",response_model=RelayStatusOut,
-         tags=["relay"])
-def get_status(relay_id:int=Path(...,ge=1,le=4)):
-    with Session() as db:
-        obj=db.query(RelayStatus).get(relay_id)
-        if not obj: raise HTTPException(404,"no status"); return obj
+        obj = db.query(RelayStatus).get(relay_id)
+
+        # ➊ Chưa tồn tại → khởi tạo mặc định
+        if obj is None:
+            obj = RelayStatus(relay=relay_id, status=0, update_time=now)
+            db.add(obj)
+            db.commit()
+            db.refresh(obj)   # đảm bảo obj có PK & update_time mới nhất
+
+        return obj
+
 
 # mode (auto/manual) ----------------------------------------
 @app.post("/api/post_relay_mode/{relay_id}", tags=["relay"])
