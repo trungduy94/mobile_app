@@ -24,7 +24,7 @@ from sqlalchemy.orm import sessionmaker
 # ──────────────────────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://duytrung:SMaYMPiWq8yob1SBSctheuqlnQSjppR6@dpg-d1ihqlje5dus739s3hfg-a/dbappmobile"
+    "postgresql://duytrung:SMaYMPiWq8yob1SBSctheuqlnQSjppR6@dpg-d1ihqlje5dus739s3hfg-a.singapore-postgres.render.com/dbappmobile"
 )
 engine  = create_engine(DATABASE_URL, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
