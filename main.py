@@ -170,22 +170,28 @@ def post_th_temp(t:ThresholdIn):
     with Session() as db:
         upsert(db,TempThreshold,'id',1,min_val=t.min_val,max_val=t.max_val)
     return {"msg":"saved"}
-@app.get("/api/get_threshold_temp",response_model=ThresholdOut,tags=["threshold"])
+@app.get("/api/get_threshold_temp", response_model=ThresholdOut,
+         tags=["threshold"])
 def get_th_temp():
     with Session() as db:
-        obj=db.query(TempThreshold).get(1)
-        if not obj: raise HTTPException(404,"no data"); return obj
+        obj = db.query(TempThreshold).get(1)
+        if not obj:
+            raise HTTPException(status_code=404, detail="no data")
+        return obj                       # ← tách ra dòng riêng
 # ↳  độ ẩm
 @app.post("/api/post_threshold_hum", tags=["threshold"])
 def post_th_hum(t:ThresholdIn):
     with Session() as db:
         upsert(db,HumThreshold,'id',1,min_val=t.min_val,max_val=t.max_val)
     return {"msg":"saved"}
-@app.get("/api/get_threshold_hum",response_model=ThresholdOut,tags=["threshold"])
+@app.get("/api/get_threshold_hum", response_model=ThresholdOut,
+         tags=["threshold"])
 def get_th_hum():
     with Session() as db:
-        obj=db.query(HumThreshold).get(1)
-        if not obj: raise HTTPException(404,"no data"); return obj
+        obj = db.query(HumThreshold).get(1)
+        if not obj:
+            raise HTTPException(status_code=404, detail="no data")
+        return obj
 
 # schedule ---------------------------------------------------
 @app.post("/api/post_schedule_relay/{relay_id}", tags=["schedule"])
@@ -194,12 +200,14 @@ def post_schedule(relay_id:int=Path(...,ge=1,le=4), s:ScheduleIn=...):
         upsert(db,RelaySchedule,'relay',relay_id,
                on_time=s.on_time,duration_s=s.duration_s)
     return {"msg":"saved"}
-@app.get("/api/get_schedule_relay/{relay_id}",response_model=ScheduleOut,
+@app.get("/api/get_schedule_relay/{relay_id}", response_model=ScheduleOut,
          tags=["schedule"])
-def get_schedule(relay_id:int=Path(...,ge=1,le=4)):
+def get_schedule(relay_id: int = Path(..., ge=1, le=4)):
     with Session() as db:
-        obj=db.query(RelaySchedule).get(relay_id)
-        if not obj: raise HTTPException(404,"no schedule"); return obj
+        obj = db.query(RelaySchedule).get(relay_id)
+        if not obj:
+            raise HTTPException(status_code=404, detail="no schedule")
+        return obj
 
 # status & log ----------------------------------------------
 # status -----------------------------------------------------
@@ -234,12 +242,14 @@ def post_mode(relay_id:int=Path(...,ge=1,le=4), m:RelayModeIn=...):
     with Session() as db:
         upsert(db,RelayMode,'relay',relay_id,mode=m.mode,update_time=now)
     return {"msg":f"relay{relay_id} set to {'MANUAL' if m.mode else 'AUTO'}"}
-@app.get("/api/get_relay_mode/{relay_id}",response_model=RelayModeOut,
+@app.get("/api/get_relay_mode/{relay_id}", response_model=RelayModeOut,
          tags=["relay"])
-def get_mode(relay_id:int=Path(...,ge=1,le=4)):
+def get_mode(relay_id: int = Path(..., ge=1, le=4)):
     with Session() as db:
-        obj=db.query(RelayMode).get(relay_id)
-        if not obj: raise HTTPException(404,"no mode"); return obj
+        obj = db.query(RelayMode).get(relay_id)
+        if not obj:
+            raise HTTPException(status_code=404, detail="no mode")
+        return obj
 
 # over‑limit log --------------------------------------------
 @app.post("/api/post_over_temp/{value}", tags=["alert"])
