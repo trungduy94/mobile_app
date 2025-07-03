@@ -234,7 +234,27 @@ def get_status(relay_id: int = Path(..., ge=1, le=4)):
 
         return obj
 
+@app.post("/api/post_relay_status/{relay_id}", tags=["relay"])
+def post_relay_status(
+    relay_id: int = Path(..., ge=1, le=4),
+    body: RelayStatusIn = Body(...)
+):
+    now = datetime.utcnow()
 
+    with Session() as db:
+        # Ghi log ON / OFF
+        if body.status == 1:
+            db.add(RelayOnLog(relay=relay_id, time=now))
+        else:
+            db.add(RelayOffLog(relay=relay_id, time=now))
+
+        # Cập nhật / thêm trạng thái
+        upsert(
+            db, RelayStatus, 'relay', relay_id,
+            status=body.status, update_time=now
+        )
+
+    return {"msg": f"relay{relay_id} status set to {body.status}"}
 # mode (auto/manual) ----------------------------------------
 @app.post("/api/post_relay_mode/{relay_id}", tags=["relay"])
 def post_mode(relay_id:int=Path(...,ge=1,le=4), m:RelayModeIn=...):
