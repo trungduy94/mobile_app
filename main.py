@@ -134,7 +134,12 @@ class RelayModeOut(BaseModel):
 class ReportRequest(BaseModel):
     email: str
     date:  str   # dd‑mm‑yyyy
-
+class RelayStateOut(BaseModel):
+    relay      : int          # 1‑4
+    mode       : int          # 0/1
+    status     : int          # 0/1
+    on_time    : time
+    duration_s : int
 # ──────────────────────────────────────────────────────────────────────────────
 # 5) HELPERS
 # ──────────────────────────────────────────────────────────────────────────────
@@ -364,7 +369,36 @@ def send_report(req:ReportRequest, bg:BackgroundTasks):
 
     bg.add_task(_job)
     return {"msg":f"Sẽ gửi báo cáo {req.date} tới {req.email}"}
+# ======================== ONE‑SHOT /get_relay_state ==========================
+@app.get(
+    "/api/get_relay_state",
+    response_model=List[RelayStateOut],
+    tags=["relay"],
+    summary="Trả về Mode‑Schedule‑Status của cả 4 relay"
+)
+def get_relay_state():
+    """
+    Gộp 3 bảng **relay_mode / relay_schedule / relay_status**  
+    thành một mảng 4 phần tử (relay 1‑4) để ESP32 chỉ cần **1 request**.
+    """
+    with Session() as db:
+        # lấy hết 1 lần – tránh nhiều round‑trip
+        modes  = {m.relay: m.mode        for m in db.query(RelayMode).all()}
+        schs   = {s.relay: s             for s in db.query(RelaySchedule).all()}
+        stats  = {s.relay: s.status      for s in db.query(RelayStatus).all()}
 
+    result = []
+    for r in range(1, 5):                       # đảm bảo đủ 4 relay
+        s   = schs.get(r)
+        res = RelayStateOut(
+            relay      = r,
+            mode       = modes.get(r, 0),
+            status     = stats.get(r, 0),
+            on_time    = s.on_time    if s else time.min,
+            duration_s = s.duration_s if s else 0
+        )
+        result.append(res)
+    return result
 # ────────────────────────────────────────────────────────────
 # 8)  AUTO‑CREATE TABLE & SEED
 # ────────────────────────────────────────────────────────────
